@@ -26,6 +26,13 @@ namespace ReservasPruebaUNI.Endpoints
             {
                 using var connection = dbFactory.Create();
 
+                const string sqlValidaUsuario = "SELECT Id, Name, Email, Password FROM [User] WHERE Email = @Email";
+
+                var validaUsuario = await connection.QuerySingleOrDefaultAsync<User>(sqlValidaUsuario, new { Email = request.Email });
+
+                if (validaUsuario is not null)
+                    return Results.BadRequest("Ya existe un Usuario con el correo especificado");
+
                 const string sql = "INSERT INTO [User] (Name, Email, Password)" +
                 " VALUES (@Name, @Email, @Password)";
 
@@ -42,7 +49,7 @@ namespace ReservasPruebaUNI.Endpoints
 
                 var userLog = await connection.QuerySingleOrDefaultAsync<User>(sql, new { Email = request.Email, Password = request.Password });
 
-               if (userLog is null)
+                if (userLog is null)
                     return Results.Unauthorized();
 
                 var token = GenerateJwtToken(userLog);

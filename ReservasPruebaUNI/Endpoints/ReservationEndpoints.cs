@@ -34,11 +34,26 @@ namespace ReservasPruebaUNI.Endpoints
             {
                 using var connection = dbFactory.Create();
 
+                const string sqlValidarReservacion = "SELECT Id, RoomId, UserId, StartDate, EndDate FROM Reservation" +
+                " WHERE CAST(StartDate AS DATE) BETWEEN CAST(@StartDate AS DATE) AND CAST(@EndDate AS DATE)" +
+                " AND RoomId = @RoomId";
+
+                var validarReservacion = await connection.QuerySingleAsync<Reservation>(sqlValidarReservacion,
+                    new
+                    {
+                        StartDate = request.StartDate,
+                        EndDate = request.EndDate,
+                        RoomId = request.RoomId
+                    });
+
+                if (validarReservacion is not null)
+                    return Results.BadRequest("Ya existe una reserva para la sala indica en ese rango de fechas");
+
                 const string sqlSala = "SELECT Id, Name, Capacity FROM Room WHERE Id = @RoomId";
 
                 var room = await connection.QuerySingleOrDefaultAsync<Room>(sqlSala, new { RoomId = request.RoomId });
 
-                if(room is null)
+                if (room is null)
                     return Results.NotFound("Sala No Valida");
 
                 const string sqlUser = "SELECT Id, Name, Email, Password FROM [User] WHERE Id = @UserId";
@@ -59,6 +74,21 @@ namespace ReservasPruebaUNI.Endpoints
             builder.MapPut("Reservation/{id}", async (long id, Reservation request, DbFactory dbFactory) =>
             {
                 using var connection = dbFactory.Create();
+
+                const string sqlValidarReservacion = "SELECT Id, RoomId, UserId, StartDate, EndDate FROM Reservation" +
+                " WHERE CAST(StartDate AS DATE) BETWEEN CAST(@StartDate AS DATE) AND CAST(@EndDate AS DATE)" +
+                " AND RoomId <> @RoomId";
+
+                var validarReservacion = await connection.QuerySingleAsync<Reservation>(sqlValidarReservacion,
+                    new
+                    {
+                        StartDate = request.StartDate,
+                        EndDate = request.EndDate,
+                        RoomId = request.RoomId
+                    });
+
+                if (validarReservacion is not null)
+                    return Results.BadRequest("Ya hay otra sala reservada en ese rango de fechas");
 
                 const string sqlSala = "SELECT Id, Name, Capacity FROM Room WHERE Id = @RoomId";
 

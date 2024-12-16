@@ -34,6 +34,13 @@ namespace ReservasPruebaUNI.Endpoints
             {
                 using var connection = dbFactory.Create();
 
+                const string sqlValidaSala = "SELECT Id, Name, Capacity FROM Room WHERE Name = @RoomName";
+
+                var validarSala = await connection.QuerySingleOrDefaultAsync<Room>(sqlValidaSala, new { RoomName = request.Name });
+
+                if (validarSala is not null)
+                    return Results.BadRequest("Ya existe una sala con el nombre especificado");
+
                 const string sql = "INSERT INTO Room (Name, Capacity)" +
                 " VALUES (@Name, @Capacity)";
 
@@ -45,6 +52,18 @@ namespace ReservasPruebaUNI.Endpoints
             builder.MapPut("Room/{id}", async (long id, Room request, DbFactory dbFactory) =>
             {
                 using var connection = dbFactory.Create();
+
+                const string sqlValidaSala = "SELECT Id, Name, Capacity FROM Room WHERE Name = @RoomName AND Id <> @RoomId";
+
+                var validarSala = await connection.QuerySingleOrDefaultAsync<Room>(sqlValidaSala,
+                    new
+                    {
+                        RoomName = request.Name,
+                        RoomId = request.Id
+                    });
+
+                if (validarSala is not null)
+                    return Results.BadRequest("Ya existe otra sala con el nombre especificado");
 
                 const string sql = "UPDATE Room SET Name = @Name, Capacity = @Capacity WHERE Id = @Id";
                 request.Id = id;
